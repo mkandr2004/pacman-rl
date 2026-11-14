@@ -1,0 +1,29 @@
+# Notes privees : defense si elles sont creees par erreur dans le depot
+/DECISIONS_TECHNIQUES_PRIVEES.md
+/private/
+/notes_privees/
+
+# Environnements, caches et secrets Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
+
+# Artefacts d'entrainement volumineux
+/checkpoints/
+/models/*.zip
+/runs/
+/tb_logs/
+
+# Fichiers d'editeurs et du systeme
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
