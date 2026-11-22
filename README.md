@@ -29,3 +29,17 @@ Chaque etape est developpee, testee et validee avant de passer a la suivante.
 Le moteur graphique initial est adapte de [`StepanTita/pacman`](https://github.com/StepanTita/pacman), importe depuis le commit `bbab75ed72dcbd6ce224aa3e718a2875afd57656` sous licence MIT.
 
 La licence et le detail des composants importes sont conserves dans [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) et [`LICENSES/StepanTita-pacman-MIT.md`](LICENSES/StepanTita-pacman-MIT.md). Les futurs commits identifieront separement les adaptations realisees pour PAC-AI ARENA.
+
+## Lancer le jeu visuel
+
+Sous Windows avec Python 3.14 :
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m main.run
+```
+
+Le jeu s'ouvre dans une fenetre Pygame. Pac-Man se controle avec les touches directionnelles.
+
+Le fichier `requirements-upstream.txt` conserve les versions historiques du depot tiers. PAC-AI ARENA utilise `pygame-ce` localement car il fournit un wheel compatible avec Python 3.14 tout en conservant l'API `import pygame` utilisee par le moteur.
