@@ -43,3 +43,19 @@ python -m venv .venv
 Le jeu s'ouvre dans une fenetre Pygame. Pac-Man se controle avec les touches directionnelles.
 
 Le fichier `requirements-upstream.txt` conserve les versions historiques du depot tiers. PAC-AI ARENA utilise `pygame-ce` localement car il fournit un wheel compatible avec Python 3.14 tout en conservant l'API `import pygame` utilisee par le moteur.
+
+## Controle externe local
+
+La demonstration suivante remplace temporairement le clavier par une politique scriptée :
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.scripted_visual_demo
+```
+
+Cette politique repete des directions pour verifier que le moteur visuel accepte une action externe. **Ce n'est pas un agent RL entraine.** Le futur environnement Gymnasium reutilisera la meme interface apres definition et validation des observations, recompenses et terminaisons.
+
+Les tests locaux verifient que le mode clavier demarre toujours et qu'une politique externe peut deplacer Pac-Man :
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
