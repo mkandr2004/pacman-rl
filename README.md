@@ -4,7 +4,7 @@ PAC-AI ARENA est un projet academique visant a construire un jeu de grille inspi
 
 ## Etat du projet
 
-Le projet est en **phase 0 : audit et choix d'architecture**. Aucun moteur de jeu ni agent RL n'est encore implemente. Les choix techniques restent soumis a validation avant chaque phase.
+La **phase 1 : noyau deterministe** est implementee sur la branche `phase-01/core`. Le moteur applique les actions de Pac-Man et du fantome sans affichage, et les regles sont couvertes par des tests. Aucun rendu Pygame, agent heuristique ou agent RL n'est encore implemente.
 
 ## Objectif scientifique
 
@@ -23,3 +23,19 @@ Construire une chaine reproductible : environnement deterministe, baselines, ent
 Audit -> noyau deterministe -> rendu -> baselines -> agents RL -> arene -> experiences -> soutenance.
 
 Chaque etape est developpee, testee et validee avant de passer a la suivante.
+
+## Installation de developpement
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+## Verifications de la phase 1
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe scripts\demo_core.py
+```
+
+Les regles exactes du tick sont decrites dans [`docs/game-rules.md`](docs/game-rules.md).
