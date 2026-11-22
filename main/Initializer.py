@@ -212,8 +212,8 @@ class EnvironmentInitializer:
 
 class GameInitializer:
 
-    def init_game(self, mode=Mode.PLAY):
-        return Game(mode=mode)
+    def init_game(self, mode=Mode.PLAY, action_provider=None):
+        return Game(mode=mode, action_provider=action_provider)
 
 
 class ColliderInitializer:

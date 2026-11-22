@@ -86,15 +86,15 @@ class Controller:
         elif self._can_move_down(sprite):
             self._move_down(sprite)
 
-    def _move_ghost(self, ghost, next_step):
+    def _move_in_direction(self, sprite, next_step):
         if next_step == Direction.LEFT:
-            self._move_left(ghost)
+            self._move_left(sprite)
         elif next_step == Direction.RIGHT:
-            self._move_right(ghost)
+            self._move_right(sprite)
         elif next_step == Direction.UP:
-            self._move_up(ghost)
+            self._move_up(sprite)
         elif next_step == Direction.DOWN:
-            self._move_down(ghost)
+            self._move_down(sprite)
 
     def is_gameover(self):
         return self._gamestatus.is_gameover()
@@ -120,39 +120,58 @@ class Controller:
 
     def player_game_group(self, sprite, groups):
         if self._any_control_key_pressed():
-            for obstacles in groups:
-                #self._move_sprite(sprite)
-                collision = self._collider.check_player_collisions(sprite, obstacles)
+            self._collect_player_items(sprite, groups)
 
-                if type(collision) is Coin:
-                    obstacles.remove(collision)
-                    self._screen_field_mapper.coin_found()
-                    self._gamestatus.update_coins_score()
-                elif type(collision) is Point:
-                    obstacles.remove(collision)
-                    self._screen_field_mapper.point_found()
-                    self._gamestatus.update_points_score()
-                elif type(collision) is Pear:
-                    obstacles.remove(collision)
-                    self._gamestatus.update_bonuses(Pear)
-                    sprite.make_invinsible()
-                elif type(collision) is Rasp:
-                    obstacles.remove(collision)
-                    self._gamestatus.update_bonuses(Rasp)
-                    sprite.make_speed()
-                elif type(collision) is Lemon:
-                    obstacles.remove(collision)
-                    self._gamestatus.update_bonuses(Lemon)
-                    sprite.make_breaker()
-                elif type(collision) is Straw:
-                    obstacles.remove(collision)
-                    self._gamestatus.update_bonuses(Straw)
-                    self._gamestatus.increase_health()
+    def _collect_player_items(self, sprite, groups):
+        for obstacles in groups:
+            collision = self._collider.check_player_collisions(sprite, obstacles)
+
+            if type(collision) is Coin:
+                obstacles.remove(collision)
+                self._screen_field_mapper.coin_found()
+                self._gamestatus.update_coins_score()
+            elif type(collision) is Point:
+                obstacles.remove(collision)
+                self._screen_field_mapper.point_found()
+                self._gamestatus.update_points_score()
+            elif type(collision) is Pear:
+                obstacles.remove(collision)
+                self._gamestatus.update_bonuses(Pear)
+                sprite.make_invinsible()
+            elif type(collision) is Rasp:
+                obstacles.remove(collision)
+                self._gamestatus.update_bonuses(Rasp)
+                sprite.make_speed()
+            elif type(collision) is Lemon:
+                obstacles.remove(collision)
+                self._gamestatus.update_bonuses(Lemon)
+                sprite.make_breaker()
+            elif type(collision) is Straw:
+                obstacles.remove(collision)
+                self._gamestatus.update_bonuses(Straw)
+                self._gamestatus.increase_health()
+
+    def player_action(self, sprite, walls, groups, direction):
+        """Apply one externally supplied action while reusing game collisions."""
+        if not isinstance(direction, Direction):
+            raise TypeError("direction must be a Direction value")
+
+        self._move_in_direction(sprite, direction)
+        collision = self._collider.check_player_collisions(sprite, walls)
+        if type(collision) is Wall:
+            if sprite.is_breaker():
+                walls.remove(collision)
+            else:
+                sprite.discard_move()
+            return True
+
+        self._collect_player_items(sprite, groups)
+        return False
 
     def stupid_ghosts(self, ghosts, obstacles):
         for ghost in ghosts:
             if issubclass(type(ghost), StupidGhost):
-                self._move_ghost(ghost, ghost.current_step())
+                self._move_in_direction(ghost, ghost.current_step())
             collided = self._collider.check_ghost_collisions(ghost, obstacles)
             if collided:
                 ghost.discard_move()
@@ -164,7 +183,7 @@ class Controller:
                 collided = True
                 ghost.find_sprite(sprite)
                 while collided:
-                    self._move_ghost(ghost, ghost.next_step())
+                    self._move_in_direction(ghost, ghost.next_step())
                     collided = self._collider.check_ghost_collisions(ghost, obstacles)
                     if not collided:
                         break

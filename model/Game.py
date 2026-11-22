@@ -6,8 +6,9 @@ from model.Events.MoveEvent import PacmanMoveEvent, CoinTossEvent, GhostAnimEven
 
 
 class Game:
-    def __init__(self, mode):
+    def __init__(self, mode, action_provider=None):
         self._mode = mode
+        self._action_provider = action_provider
         self._clock = pygame.time.Clock()
 
     def set_screen_field_mapper(self, screen_field_mapper):
@@ -65,18 +66,39 @@ class Game:
         return False
 
     def _player_game(self):
-        if not self._controller.player_game(self._screen_field_mapper.get_pacman(),
-                                            self._screen_field_mapper.get_walls()):
-            self._controller.player_game_group(self._screen_field_mapper.get_pacman(), self._screen_field_mapper.get_container())
+        pacman = self._screen_field_mapper.get_pacman()
+        walls = self._screen_field_mapper.get_walls()
+        container = self._screen_field_mapper.get_container()
 
-        self._controller.ghosts_player(self._screen_field_mapper.get_pacman(), self._screen_field_mapper.get_ghosts())
+        if self._action_provider is None:
+            if not self._controller.player_game(pacman, walls):
+                self._controller.player_game_group(pacman, container)
+        else:
+            action = self._action_provider(self.observation())
+            if action is not None:
+                self._controller.player_action(pacman, walls, container, action)
+
+        self._controller.ghosts_player(pacman, self._screen_field_mapper.get_ghosts())
         self._controller.stupid_ghosts(self._screen_field_mapper.get_ghosts(), self._screen_field_mapper.get_walls())
-        self._controller.smart_ghosts(self._screen_field_mapper.get_pacman(),
+        self._controller.smart_ghosts(pacman,
                                       self._screen_field_mapper.get_ghosts(),
                                       self._screen_field_mapper.get_walls())
 
-    def run(self):
+    def observation(self):
+        """Return a small factual snapshot for scripted or learned policies."""
+        pacman = self._screen_field_mapper.get_pacman()
+        ghosts = self._screen_field_mapper.get_ghosts()
+        return {
+            "pacman": pacman.get_sprite_pos(),
+            "ghosts": tuple(ghost.get_sprite_pos() for ghost in ghosts),
+            "coins_remaining": len(self._screen_field_mapper.get_coins()),
+            "points_remaining": len(self._screen_field_mapper.get_points()),
+            "score": self._controller.score(),
+        }
+
+    def run(self, max_frames=None):
         active = True
+        frame_count = 0
         while active:
             if consts.LEARNING:
                 self._clock.tick(100)
@@ -107,4 +129,10 @@ class Game:
             # Update the screen
             self._drawer.update()
 
+            frame_count += 1
+            if max_frames is not None and frame_count >= max_frames:
+                active = False
+
+        final_observation = self.observation()
         pygame.quit()
+        return final_observation

@@ -8,7 +8,7 @@ from main.Initializer import GameInitializer, EnvironmentInitializer, ObjectsIni
 from model.utils.Utils import FileUtils, BaseUtils
 
 
-def main():
+def main(action_provider=None, max_frames=None):
     pygame.init()
 
     # Event Initializer
@@ -72,14 +72,14 @@ def main():
 
     # Init game
     game_initializer = GameInitializer()
-    game = game_initializer.init_game(mode=Mode.PLAY)
+    game = game_initializer.init_game(mode=Mode.PLAY, action_provider=action_provider)
 
     # Set Game
     game.set_drawer(drawer)
     game.set_controller(controller)
     game.set_screen_field_mapper(screen_field_mapper)
 
-    game.run()
+    return game.run(max_frames=max_frames)
 
 
 if __name__ == '__main__':
