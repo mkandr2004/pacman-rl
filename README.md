@@ -4,7 +4,7 @@ PAC-AI ARENA est un projet academique visant a construire un jeu de grille inspi
 
 ## Etat du projet
 
-Le projet est en **phase 0 : audit et choix d'architecture**. Aucun moteur de jeu ni agent RL n'est encore implemente. Les choix techniques restent soumis a validation avant chaque phase.
+Le projet integre maintenant un moteur de jeu Pygame visuel comme base de travail. L'interface pour les agents, les observations, les recompenses et l'entrainement RL seront ajoutes progressivement et testes separement.
 
 ## Objectif scientifique
 
@@ -23,3 +23,9 @@ Construire une chaine reproductible : environnement deterministe, baselines, ent
 Audit -> noyau deterministe -> rendu -> baselines -> agents RL -> arene -> experiences -> soutenance.
 
 Chaque etape est developpee, testee et validee avant de passer a la suivante.
+
+## Moteur graphique tiers
+
+Le moteur graphique initial est adapte de [`StepanTita/pacman`](https://github.com/StepanTita/pacman), importe depuis le commit `bbab75ed72dcbd6ce224aa3e718a2875afd57656` sous licence MIT.
+
+La licence et le detail des composants importes sont conserves dans [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) et [`LICENSES/StepanTita-pacman-MIT.md`](LICENSES/StepanTita-pacman-MIT.md). Les futurs commits identifieront separement les adaptations realisees pour PAC-AI ARENA.
