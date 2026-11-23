@@ -8,7 +8,8 @@ from main.Initializer import GameInitializer, EnvironmentInitializer, ObjectsIni
 from model.utils.Utils import FileUtils, BaseUtils
 
 
-def main(action_provider=None, max_frames=None):
+def create_game(action_provider=None):
+    """Build a configured game without starting its real-time loop."""
     pygame.init()
 
     # Event Initializer
@@ -79,6 +80,11 @@ def main(action_provider=None, max_frames=None):
     game.set_controller(controller)
     game.set_screen_field_mapper(screen_field_mapper)
 
+    return game
+
+
+def main(action_provider=None, max_frames=None):
+    game = create_game(action_provider=action_provider)
     return game.run(max_frames=max_frames)
 
 

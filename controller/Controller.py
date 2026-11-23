@@ -102,6 +102,9 @@ class Controller:
     def score(self):
         return self._gamestatus.score()
 
+    def health(self):
+        return self._gamestatus.health()
+
     def auto_game(self):
         ...  # TODO
 

@@ -1,2 +1,3 @@
 # pygame-ce keeps the pygame import API and provides Python 3.14 wheels.
 pygame-ce==2.5.8
+gymnasium==1.4.0

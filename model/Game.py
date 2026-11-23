@@ -65,18 +65,20 @@ class Game:
             return True
         return False
 
-    def _player_game(self):
+    def _player_game(self, action=None):
         pacman = self._screen_field_mapper.get_pacman()
         walls = self._screen_field_mapper.get_walls()
         container = self._screen_field_mapper.get_container()
 
-        if self._action_provider is None:
+        if action is not None:
+            self._controller.player_action(pacman, walls, container, action)
+        elif self._action_provider is None:
             if not self._controller.player_game(pacman, walls):
                 self._controller.player_game_group(pacman, container)
         else:
-            action = self._action_provider(self.observation())
-            if action is not None:
-                self._controller.player_action(pacman, walls, container, action)
+            provided_action = self._action_provider(self.observation())
+            if provided_action is not None:
+                self._controller.player_action(pacman, walls, container, provided_action)
 
         self._controller.ghosts_player(pacman, self._screen_field_mapper.get_ghosts())
         self._controller.stupid_ghosts(self._screen_field_mapper.get_ghosts(), self._screen_field_mapper.get_walls())
@@ -84,20 +86,82 @@ class Game:
                                       self._screen_field_mapper.get_ghosts(),
                                       self._screen_field_mapper.get_walls())
 
+    @staticmethod
+    def _positions(sprites):
+        return tuple(
+            sprite.get_sprite_pos()
+            if hasattr(sprite, "get_sprite_pos")
+            else (sprite.x(), sprite.y())
+            for sprite in sprites
+        )
+
     def observation(self):
-        """Return a small factual snapshot for scripted or learned policies."""
+        """Return factual game state without choosing a reinforcement reward."""
         pacman = self._screen_field_mapper.get_pacman()
         ghosts = self._screen_field_mapper.get_ghosts()
+        bonus_groups = (
+            self._screen_field_mapper.get_straw(),
+            self._screen_field_mapper.get_rasp(),
+            self._screen_field_mapper.get_lemon(),
+            self._screen_field_mapper.get_pear(),
+        )
         return {
             "pacman": pacman.get_sprite_pos(),
-            "ghosts": tuple(ghost.get_sprite_pos() for ghost in ghosts),
+            "ghosts": self._positions(ghosts),
+            "walls": self._positions(self._screen_field_mapper.get_walls()),
+            "coins": self._positions(self._screen_field_mapper.get_coins()),
+            "points": self._positions(self._screen_field_mapper.get_points()),
+            "bonuses": tuple(
+                position
+                for group in bonus_groups
+                for position in self._positions(group)
+            ),
             "coins_remaining": len(self._screen_field_mapper.get_coins()),
             "points_remaining": len(self._screen_field_mapper.get_points()),
             "score": self._controller.score(),
+            "health": self._controller.health(),
+            "screen_size": (
+                self._screen_field_mapper.get_screen_width(),
+                self._screen_field_mapper.get_screen_height(),
+            ),
         }
+
+    def advance(self, action=None, render=True, process_events=True):
+        """Advance exactly one frame and expose terminal facts to an adapter."""
+        active = self._process_events() if process_events else True
+
+        if render:
+            self._drawer.clear()
+
+        if active:
+            if self._mode == Mode.AUTO:
+                self._controller.auto_game()
+            else:
+                self._player_game(action=action)
+            self._check_statuses()
+
+        victory = self._screen_field_mapper.is_victory()
+        game_over = self._controller.is_gameover()
+
+        if render:
+            if victory:
+                self._drawer.draw_victory()
+            elif game_over:
+                self._drawer.draw_gameover(self._controller.score())
+            else:
+                self._drawer.draw()
+            self._drawer.update()
+
+        info = {
+            "victory": victory,
+            "game_over": game_over,
+            "window_closed": not active,
+        }
+        return self.observation(), victory or game_over, info
 
     def run(self, max_frames=None):
         active = True
+        terminal = False
         frame_count = 0
         while active:
             if consts.LEARNING:
@@ -105,29 +169,11 @@ class Game:
             else:
                 self._clock.tick(100)
 
-            # Process events
-            active = self._process_events()
-
-            # Clear the screen
-            self._drawer.clear()
-
-            # Check input
-            # Move objects ...
-            if self._mode == Mode.AUTO:
-                self._controller.auto_game()
+            if terminal:
+                active = self._process_events()
             else:
-                self._player_game()
-
-            self._check_statuses()
-
-            paused = self._check_gameover()
-
-            if not paused:
-                # Draw objects ...
-                self._drawer.draw()
-
-            # Update the screen
-            self._drawer.update()
+                _, terminal, info = self.advance()
+                active = not info["window_closed"]
 
             frame_count += 1
             if max_frames is not None and frame_count >= max_frames:

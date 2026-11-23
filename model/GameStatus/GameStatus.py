@@ -56,5 +56,8 @@ class GameStatus:
     def is_gameover(self):
         return self._health == 0
 
+    def health(self):
+        return self._health
+
     def score(self):
         return self._points_score + self._coins_score
