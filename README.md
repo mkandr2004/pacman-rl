@@ -59,3 +59,36 @@ Les tests locaux verifient que le mode clavier demarre toujours et qu'une politi
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+## Premier environnement RL local
+
+`rl.pacman_env.PacmanEnv` expose le moteur avec l'API Gymnasium. Cette premiere version entraine uniquement Pac-Man ; les ghosts conservent leurs comportements programmes.
+
+Les quatre actions discretes sont :
+
+| Action | Direction |
+|---:|---|
+| 0 | gauche |
+| 1 | droite |
+| 2 | haut |
+| 3 | bas |
+
+L'observation contient six canaux de grille (murs, pieces, points, bonus, Pac-Man et ghosts), les positions exactes des personnages et la vie restante. La grille explique la structure du niveau ; les positions exactes evitent de perdre les mouvements effectues a l'interieur d'une case.
+
+La recompense initiale est volontairement decomposable :
+
+- `-0.01` par decision ;
+- variation positive du score pour les objets collectes ;
+- `-25` par vie perdue ;
+- `+100` pour une victoire ;
+- `-100` pour un game over.
+
+Ces valeurs sont des hypotheses de depart, pas des resultats scientifiques. Chaque composante est retournee dans `info["reward_terms"]` afin de pouvoir diagnostiquer et comparer les variantes sans modifier les regles du jeu.
+
+Une politique aleatoire permet de valider un episode complet avant d'ajouter un algorithme d'apprentissage :
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.random_baseline --episodes 3 --max-steps 300
+```
+
+Cette baseline n'est pas un agent entraine. Elle verifie les observations, les actions, les recompenses, les terminaisons et la reproductibilite par seed.
