@@ -32,7 +32,7 @@ class PacmanEnvTest(unittest.TestCase):
             self.assertEqual(observation["pacman_position"].shape, (2,))
             self.assertEqual(
                 observation["ghost_positions"].shape,
-                (env.ghost_count, 2),
+                (env.ghost_count * 2,),
             )
             self.assertEqual(observation["health"], 3)
             self.assertEqual(info["score"], 0)
@@ -55,6 +55,7 @@ class PacmanEnvTest(unittest.TestCase):
             self.assertFalse((initial_grid[env.PACMAN] == observation["grid"][env.PACMAN]).all())
             self.assertAlmostEqual(reward, sum(info["reward_terms"].values()))
             self.assertEqual(info["action"], "RIGHT")
+            self.assertGreater(info["score"], 0)
             self.assertIsInstance(total_reward, float)
         finally:
             env.close()

@@ -89,4 +89,17 @@ def main(action_provider=None, max_frames=None):
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Lancer PAC-AI ARENA")
+    parser.add_argument("--keyboard", action="store_true", help="Ouvrir directement le mode clavier.")
+    parser.add_argument("--seed", type=int, help="Fixer la graine des parties IA pour une démonstration.")
+    args = parser.parse_args()
+    if args.keyboard:
+        main()
+    elif args.seed is not None and not 0 <= args.seed < 2**32:
+        parser.error("--seed doit être comprise entre 0 et 4294967295")
+    else:
+        from main.lobby import run_lobby
+
+        run_lobby(create_game, args.seed)

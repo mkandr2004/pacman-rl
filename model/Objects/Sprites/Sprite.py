@@ -130,6 +130,14 @@ class Pacman(Sprite):
         self._inv_start_time = 0
         self._speed_start_time = 0
         self._break_start_time = 0
+        self.time_source = pygame.time.get_ticks
+        self._base_horizontal_speed = horizontal_speed
+        self._base_vertical_speed = vertical_speed
+
+    def _refresh_effect_speed(self):
+        multiplier = (2 if self._speeded else 1) / (2 if self._breaker else 1)
+        self.speed_horizontal = max(1, int(self._base_horizontal_speed * multiplier))
+        self.speed_vertical = max(1, int(self._base_vertical_speed * multiplier))
 
     def _read_image(self, img=consts.PACMAN, img_pos=consts.ALL_SPRITE_POS):
         return ImageUtils.resize_images(
@@ -156,17 +164,17 @@ class Pacman(Sprite):
         self._img_states = self._read_image()
         self._states = cycle(self._img_states)
         self.update_direction(self.moving_direction)
-        self._inv_start_time = pygame.time.get_ticks()
+        self._inv_start_time = self.time_source()
 
     def make_breaker(self):
         self._breaker = True
-        self.speed_down()
-        self._break_start_time = pygame.time.get_ticks()
+        self._refresh_effect_speed()
+        self._break_start_time = self.time_source()
 
     def make_speed(self):
         self._speeded = True
-        self.speed_up()
-        self._speed_start_time = pygame.time.get_ticks()
+        self._refresh_effect_speed()
+        self._speed_start_time = self.time_source()
 
     def speed_up(self, times=2):
         self.speed_horizontal *= times
@@ -186,12 +194,12 @@ class Pacman(Sprite):
     def check_speed(self, end_time):
         if end_time - self._speed_start_time >= self._speed_length:
             self._speeded = False
-            self.speed_down()
+            self._refresh_effect_speed()
 
     def check_breaker(self, end_time):
         if end_time - self._break_start_time >= self._breaker_length:
             self._breaker = False
-            self.speed_up()
+            self._refresh_effect_speed()
 
 
 class Ghost(Sprite):
@@ -222,10 +230,12 @@ class StupidGhost(Ghost):
         super().__init__(images, horizontal_speed, vertical_speed, x, y, width, height, block_width, block_height)
         self._current_step = None
         self._instructions = None
+        self._instruction_index = 0
 
     def set_instructions(self, instructions):
-        self._instructions = cycle(instructions)
-        self._current_step = next(self._instructions)
+        self._instructions = tuple(instructions)
+        self._instruction_index = 0
+        self._current_step = self._instructions[0]
 
     def current_step(self):
         if self._passed_horizontal >= self._block_width:
@@ -236,7 +246,8 @@ class StupidGhost(Ghost):
         return self._current_step
 
     def next_step(self):
-        self._current_step = next(self._instructions)
+        self._instruction_index = (self._instruction_index + 1) % len(self._instructions)
+        self._current_step = self._instructions[self._instruction_index]
 
 
 class SmartGhost(Ghost):

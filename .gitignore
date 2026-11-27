@@ -20,6 +20,10 @@ htmlcov/
 # Artefacts d'entrainement volumineux
 /checkpoints/
 /models/*.zip
+!/models/arena_dagger42.zip
+!/models/arena_hybrid337.zip
+!/models/arena_slowghost_ppo.zip
+!/models/arena_ghost_team_2.zip
 /runs/
 /tb_logs/
 

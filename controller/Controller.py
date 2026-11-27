@@ -112,13 +112,28 @@ class Controller:
         self._update_buttons()
         if self._any_control_key_pressed():
             self._move_sprite(sprite)
-            collision = self._collider.check_player_collisions(sprite, obstacles)
-            if type(collision) is Wall:
-                if sprite.is_breaker():
-                    obstacles.remove(collision)
-                else:
-                    sprite.discard_move()
-            return type(collision) is Wall
+            return self._resolve_player_move(sprite, obstacles)
+        return False
+
+    def is_border_wall(self, wall):
+        rect = wall.get_rect()
+        return (rect.left <= 0 or rect.top <= 0
+                or rect.right >= self._screen_field_mapper.get_screen_width()
+                or rect.bottom >= self._screen_field_mapper.get_screen_height())
+
+    def _resolve_player_move(self, sprite, walls):
+        bounds = pygame.Rect(0, 0,
+            self._screen_field_mapper.get_screen_width(),
+            self._screen_field_mapper.get_screen_height())
+        collisions = [wall for wall in walls if sprite.collide(wall)]
+        if (not bounds.contains(sprite.get_rect())
+                or any(self.is_border_wall(wall) for wall in collisions)
+                or (collisions and not sprite.is_breaker())):
+            sprite.discard_move()
+            return True
+        if collisions:
+            walls.remove(*collisions)
+            return True
         return False
 
     def player_game_group(self, sprite, groups):
@@ -160,19 +175,38 @@ class Controller:
             raise TypeError("direction must be a Direction value")
 
         self._move_in_direction(sprite, direction)
-        collision = self._collider.check_player_collisions(sprite, walls)
-        if type(collision) is Wall:
-            if sprite.is_breaker():
-                walls.remove(collision)
-            else:
-                sprite.discard_move()
+        if self._resolve_player_move(sprite, walls):
             return True
 
         self._collect_player_items(sprite, groups)
         return False
 
-    def stupid_ghosts(self, ghosts, obstacles):
+    def ghost_directions(self, ghost, walls):
+        """Directions physically available to an externally controlled ghost."""
+        bounds = pygame.Rect(0, 0, self._screen_field_mapper.get_screen_width(),
+                             self._screen_field_mapper.get_screen_height())
+        offsets = ((Direction.LEFT, -ghost.speed_horizontal, 0),
+                   (Direction.RIGHT, ghost.speed_horizontal, 0),
+                   (Direction.UP, 0, -ghost.speed_vertical),
+                   (Direction.DOWN, 0, ghost.speed_vertical))
+        wall_rects = [wall.get_rect() for wall in walls]
+        legal = []
+        for direction, dx, dy in offsets:
+            rect = ghost.get_rect().move(dx, dy)
+            if bounds.contains(rect) and rect.collidelist(wall_rects) == -1:
+                legal.append(direction)
+        return legal
+
+    def move_controlled_ghost(self, ghost, walls, direction):
+        if direction is not None and direction in self.ghost_directions(ghost, walls):
+            self._move_in_direction(ghost, direction)
+
+    def stupid_ghosts(self, ghosts, obstacles, controlled=None):
         for ghost in ghosts:
+            if controlled and ghost in controlled:
+                if isinstance(ghost, StupidGhost):
+                    self.move_controlled_ghost(ghost, obstacles, controlled[ghost])
+                continue
             if issubclass(type(ghost), StupidGhost):
                 self._move_in_direction(ghost, ghost.current_step())
             collided = self._collider.check_ghost_collisions(ghost, obstacles)
@@ -180,9 +214,12 @@ class Controller:
                 ghost.discard_move()
                 ghost.next_step()
 
-    def smart_ghosts(self, sprite, ghosts, obstacles):
+    def smart_ghosts(self, sprite, ghosts, obstacles, controlled=None):
         for ghost in ghosts:
             if issubclass(type(ghost), SmartGhost):
+                if controlled and ghost in controlled:
+                    self.move_controlled_ghost(ghost, obstacles, controlled[ghost])
+                    continue
                 collided = True
                 ghost.find_sprite(sprite)
                 while collided:
@@ -195,5 +232,8 @@ class Controller:
     def ghosts_player(self, sprite, ghosts):
         collision = self._collider.check_player_collisions(sprite, ghosts)
         if issubclass(type(collision), Ghost) and not sprite.is_invinsible():
+            before = self.health()
             sprite.make_invinsible()
             self._gamestatus.decrease_health()
+            if self.health() < before:
+                return collision

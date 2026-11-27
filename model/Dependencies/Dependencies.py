@@ -1,10 +1,12 @@
 import pygame
 import os
+from functools import lru_cache
 
 
 class Dependencies:
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def load_img(path):
         return pygame.image.load(os.path.join(os.getcwd(), path)).convert_alpha()
 

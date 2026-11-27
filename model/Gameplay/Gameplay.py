@@ -1,16 +1,11 @@
-from model.Objects.Interactable.Interactable import Interactable
 from model.Objects.background.Wall import Wall
 
 
 class Collider:
     def _has_collisions(self, character, obstacles):
         for obstacle in obstacles:
-            if issubclass(type(obstacle), Interactable):
-                if character.collidepoint(obstacle):
-                    return obstacle
-            else:
-                if character.collide(obstacle):
-                    return obstacle
+            if character.collide(obstacle):
+                return obstacle
         return None
 
     def check_player_collisions(self, character, obstacles):
