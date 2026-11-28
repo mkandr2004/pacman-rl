@@ -137,7 +137,7 @@ class ObjectsInitializer:
         return ghosts_generator
 
     def _init_health(self, x, y, width, height):
-        health_text_block = StatusText(x + width // 16, y + height // 5, width, height, "Health: ")
+        health_text_block = StatusText(x + width // 16, y + height // 5, width, height, "", font_size=14)
         health_blocks = [HealthStatusBlock(x + width * (i + 1), y - height // 7, width, height) for i in
                          range(consts.HEALTH)]
         for health_block in health_blocks:

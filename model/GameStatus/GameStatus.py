@@ -15,21 +15,27 @@ class GameStatus:
 
         self._health_text_block = health_text_block
         self._health_blocks = health_blocks
+        self._update_health_text()
 
         self._point_score_block = point_score_block
         self._points_score_text_block = points_score_text_block
         self._coint_score_block = coint_score_block
         self._coins_score_text_block = coins_score_text_block
 
+    def _update_health_text(self):
+        self._health_text_block.set_text(f"Vies {self._health}/{self._max_health}")
+
     def decrease_health(self):
         if self._health > 0:
             self._health -= 1
             self._health_blocks[self._health].decrease_health()
+            self._update_health_text()
 
     def increase_health(self):
-        if self._health < 3:
+        if self._health < self._max_health:
             self._health_blocks[self._health].increase_health()
             self._health += 1
+            self._update_health_text()
 
 
     def update_points_score(self):

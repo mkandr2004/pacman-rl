@@ -34,10 +34,13 @@ class ImageStatusBlock(GameStatusBlock):
 
 
 class StatusText(GameStatusBlock):
-    def __init__(self, x, y, width, height, text):
+    def __init__(self, x, y, width, height, text, font_size=20):
         super().__init__(x, y, width, height)
-        text_font = pygame.font.SysFont('Comic Sans MS', 20)
-        self._status = text_font.render(text, False, (255, 255, 255))
+        self._font = pygame.font.SysFont('Comic Sans MS', font_size)
+        self.set_text(text)
+
+    def set_text(self, text):
+        self._status = self._font.render(text, True, (255, 255, 255))
 
 
 class HealthStatusBlock(ImageStatusBlock):
