@@ -21,11 +21,13 @@ class SlowGhostEnv(gym.Env):
     metadata = PacmanEnv.metadata
     version = "slow-ghost-v1"
 
-    def __init__(self, opponent, *, render_mode=None, max_episode_steps=3000, keyboard=False):
+    def __init__(self, opponent, *, render_mode=None, max_episode_steps=3000, keyboard=False,
+                 track_classic=False):
         if keyboard != (opponent is None) or (keyboard and render_mode != "human"):
             raise ValueError("Use a frozen model or the keyboard in a rendered match.")
         self.opponent = opponent
         self.keyboard = keyboard
+        self.track_classic = track_classic
         self.render_mode = render_mode
         self.pacman = make_imitation_env(danger=False, render_mode=render_mode)
         self.base = self.pacman.unwrapped
@@ -118,7 +120,8 @@ class SlowGhostEnv(gym.Env):
             action, _ = self.opponent.predict(self._pacman_observation,
                 deterministic=True, action_masks=self.base.action_masks())
         observation, _, terminated, truncated, info = self.base.step(
-            action, ghost_actions=ghost_actions, track_ghosts=True, keyboard=self.keyboard)
+            action, ghost_actions=ghost_actions, track_ghosts=True,
+            track_classic=self.track_classic, keyboard=self.keyboard)
         self._pacman_observation = self.pacman.observation(observation)
         ghost_win = info["game_over"] and not info["victory"] and not info["window_closed"]
         truncated = bool(truncated and not terminated)

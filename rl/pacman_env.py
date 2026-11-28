@@ -195,7 +195,7 @@ class PacmanEnv(gym.Env):
         )
         return observation, info
 
-    def step(self, action, *, ghost_actions=None, track_ghosts=False, keyboard=False):
+    def step(self, action, *, ghost_actions=None, track_ghosts=False, track_classic=False, keyboard=False):
         if self._game is None:
             raise ResetNeeded("Call reset() before step().")
         if self._episode_finished:
@@ -212,9 +212,9 @@ class PacmanEnv(gym.Env):
         lost_health = 0
         if track_ghosts:
             captures = []
-            movement = dict.fromkeys(ghost_actions or (), 0)
             active_frames = 0
             ghosts = tuple(self._game._screen_field_mapper.get_ghosts())
+            movement = dict.fromkeys(range(len(ghosts)) if track_classic else ghost_actions or (), 0)
         terminal_info = {
             "victory": False,
             "game_over": False,
