@@ -41,6 +41,10 @@ class LobbyTest(unittest.TestCase):
         self.assertEqual(choose_ghosts(surface, "DAgger 42"), 1)
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_1))
         self.assertEqual(choose_ghosts(surface, "Hybride 337"), 0)
+        for pacman in ("DAgger 42", "Hybride 337", "Clavier"):
+            with self.subTest(pacman=pacman):
+                pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_4))
+                self.assertEqual(choose_ghosts(surface, pacman), 3)
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
         self.assertEqual(choose_ghosts(surface, "Clavier"), "back")
 

@@ -27,13 +27,14 @@ Les quatre checkpoints du lobby sont des fichiers locaux dans `models/`. Si le l
 
 ## Choisir les deux contrôleurs
 
-Le premier écran sélectionne Pac-Man. Le second sélectionne les fantômes, indépendamment du premier choix. La souris, les touches `1` à `3` et les flèches suivies d’Entrée fonctionnent dans les menus.
+Le premier écran sélectionne Pac-Man. Le second sélectionne les fantômes, indépendamment du premier choix. Utilise la souris, les touches numériques affichées ou les flèches suivies d’Entrée.
 
 | Touche | Premier écran, Pac-Man | Second écran, fantômes |
 |---|---|---|
 | `1` | DAgger 42 | Sept fantômes classiques |
 | `2` | Hybride 337 | Fantôme lent PPO 227 et six classiques |
 | `3` | Joueur au clavier | Équipe PPO, deux fantômes appris et cinq classiques |
+| `4` | | Poursuite et interception, deux fantômes programmés et cinq classiques |
 
 Les flèches déplacent Pac-Man quand tu joues au clavier. Dans une partie lancée depuis le lobby, Échap revient au lobby. Dans les menus, cette touche revient à l’écran précédent ou ferme le jeu depuis le premier écran. Sur l’écran de résultat d’une partie avec IA, Entrée relance la même configuration et Échap revient au lobby. Pour ouvrir directement le jeu clavier avec les fantômes classiques, ajoute `--keyboard` à la commande de lancement. Dans ce mode direct, ferme la fenêtre pour quitter.
 

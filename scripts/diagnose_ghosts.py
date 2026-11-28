@@ -1,79 +1,21 @@
 """Replay paired lobby matches and report movement, captures and collection gaps."""
 
 import argparse
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 from statistics import mean
 
 import numpy as np
 
-import consts
 from main.arena_models import ARENA_MODELS, GHOST_MODEL, TEAM_MODEL, load_model
 from rl.ghost_env import DIRECTIONS, WAIT, SlowGhostEnv
 from rl.ghost_evaluation import seed_sampling
+from rl.ghost_interception import interception_actions
 from rl.ghost_team_env import GhostTeamEnv
 
 
-DELTAS = ((0, -1), (0, 1), (-1, 0), (1, 0))
 MODES = ("classic", "slow_ppo", "team_ppo", "interception")
-
-
-def neighbors(cell, walls):
-    for dy, dx in DELTAS:
-        y, x = cell[0] + dy, cell[1] + dx
-        if 0 <= y < walls.shape[0] and 0 <= x < walls.shape[1] and not walls[y, x]:
-            yield y, x
-
-
-def interception_actions(env, masks):
-    """Send the slow ghost after Pac-Man and the fast one to the next junction."""
-    raw = env.base._last_raw_observation
-    walls = env.match._pacman_observation["grid"][0]
-    target = env.base._grid_position(raw["pacman"])
-    mapper = env.match.game._screen_field_mapper
-    heading = mapper.get_pacman().moving_direction
-    ahead = target
-    if heading in DIRECTIONS:
-        dy, dx = DELTAS[DIRECTIONS.index(heading)]
-        for offset in range(1, 5):
-            candidate = target[0] + dy * offset, target[1] + dx * offset
-            if candidate not in neighbors(ahead, walls):
-                break
-            ahead = candidate
-            if sum(1 for _ in neighbors(ahead, walls)) >= 3:
-                break
-
-    actions = []
-    ghosts = list(mapper.get_ghosts())
-    for slot, destination, mask in zip(env.slots, (target, ahead), masks, strict=True):
-        if mask[WAIT]:
-            actions.append(WAIT)
-            continue
-        distance = {destination: 0}
-        queue = deque([destination])
-        while queue:
-            cell = queue.popleft()
-            for neighbor in neighbors(cell, walls):
-                if neighbor not in distance:
-                    distance[neighbor] = distance[cell] + 1
-                    queue.append(neighbor)
-        ghost = ghosts[slot]
-        x, y = raw["ghosts"][slot]
-        width, height = consts.BLOCK_WIDTH, consts.BLOCK_HEIGHT
-        origin = round(y / height), round(x / width)
-        if origin != destination:
-            destination = min(neighbors(origin, walls),
-                              key=lambda cell: distance.get(cell, walls.size), default=origin)
-
-        def rank(action):
-            dy, dx = DELTAS[action]
-            return (abs(x + dx * ghost.speed_horizontal - destination[1] * width)
-                    + abs(y + dy * ghost.speed_vertical - destination[0] * height),
-                    DIRECTIONS[action] != ghost.moving_direction, action)
-
-        actions.append(min(np.flatnonzero(mask), key=rank))
-    return np.asarray(actions)
 
 
 def replay(opponent, mode, controller, seed):

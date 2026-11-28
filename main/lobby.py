@@ -20,8 +20,9 @@ CYAN = "#73e5de"
 CARDS = (pygame.Rect(54, 249, 416, 222), pygame.Rect(490, 249, 416, 222),
          pygame.Rect(54, 493, 852, 78))
 CHOICES = (*ARENA_MODELS, None)
-KEY_CHOICES = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2,
-               pygame.K_KP1: 0, pygame.K_KP2: 1, pygame.K_KP3: 2}
+INTERCEPTION_NAME = "Poursuite et interception"
+KEY_CHOICES = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3,
+               pygame.K_KP1: 0, pygame.K_KP2: 1, pygame.K_KP3: 2, pygame.K_KP4: 3}
 
 
 class Screen:
@@ -99,7 +100,7 @@ def choose(surface):
 
 
 def choose_ghosts(surface, pacman_name):
-    cards = CARDS if TEAM_MODEL else CARDS[:2]
+    cards = (*CARDS[:2], pygame.Rect(54, 483, 852, 56), pygame.Rect(54, 549, 852, 56))
 
     def draw(screen, selected):
         screen.surface.fill(BACKGROUND)
@@ -116,12 +117,15 @@ def choose_ghosts(surface, pacman_name):
             screen.text(description, rect.x + 24, 374, 21, SECONDARY)
             if i == 1:
                 screen.text("Prototype expérimental", rect.x + 24, 423, 17, accent)
-        if TEAM_MODEL:
-            screen.panel(CARDS[2], CYAN if selected == 2 else LINE)
-            screen.text("3", 78, 516, 20, CYAN, bold=True)
-            screen.text(TEAM_MODEL.name, 116, 512, 26, bold=True)
-            screen.text(f"Prototype · {TEAM_MODEL.count} appris · {7-TEAM_MODEL.count} classiques",
-                        525, 520, 19, SECONDARY)
+        for i, (name, description) in enumerate((
+            (TEAM_MODEL.name, f"{TEAM_MODEL.count} appris · {7 - TEAM_MODEL.count} classiques"),
+            (INTERCEPTION_NAME, "Un poursuivant · un intercepteur · cinq classiques"),
+        ), start=2):
+            rect = cards[i]
+            screen.panel(rect, CYAN if selected == i else LINE)
+            screen.text(str(i + 1), 78, rect.y + 17, 20, CYAN, bold=True)
+            screen.text(name, 116, rect.y + 13, 26, bold=True)
+            screen.text(description, 461, rect.y + 18, 19, SECONDARY)
         pygame.draw.line(screen.surface, LINE, (54, 618), (906, 618), 2)
         screen.text(f"1–{len(cards)}  Sélection directe     Flèches + Entrée  Choisir     Échap  Retour",
                     55, 644, 21, SECONDARY)
@@ -155,16 +159,19 @@ def wait_after_message(replay=False):
                 return "replay" if replay else "lobby"
 
 
-def play_model(entry, model, seed=None, *, ghost_entry=None, ghost_model=None):
-    duel = ghost_model is not None
-    deterministic = not duel or not ghost_entry.stochastic
+def play_model(entry, model, seed=None, *, ghost_entry=None, ghost_model=None, interception=False):
+    duel = interception or ghost_model is not None
+    deterministic = ghost_model is None or not ghost_entry.stochastic
     pacman_name = entry.name if entry is not None else "Clavier"
     name = pacman_name
+    if interception:
+        from rl.ghost_interception import interception_actions
     if duel:
-        if ghost_entry.count > 1:
+        count = 2 if interception else ghost_entry.count
+        if count > 1:
             from rl.ghost_team_env import GhostTeamEnv
 
-            env = GhostTeamEnv(model, ghost_entry.count, render_mode="human", keyboard=model is None)
+            env = GhostTeamEnv(model, count, render_mode="human", keyboard=model is None)
         else:
             from rl.ghost_env import SlowGhostEnv
 
@@ -172,7 +179,7 @@ def play_model(entry, model, seed=None, *, ghost_entry=None, ghost_model=None):
         base = env.base
         controller = ghost_model
         masks = env.action_masks
-        name = f"{pacman_name} · {ghost_entry.name}"
+        name = f"{pacman_name} · {INTERCEPTION_NAME if interception else ghost_entry.name}"
     else:
         from rl.imitation_env import make_imitation_env
 
@@ -192,7 +199,10 @@ def play_model(entry, model, seed=None, *, ghost_entry=None, ghost_model=None):
             pygame.display.set_caption(f"PAC-AI ARENA | {name} | Échap : lobby")
             terminated = truncated = False
             while not (terminated or truncated):
-                action, _ = controller.predict(observation, deterministic=deterministic, action_masks=masks())
+                if interception:
+                    action = interception_actions(env, masks())
+                else:
+                    action, _ = controller.predict(observation, deterministic=deterministic, action_masks=masks())
                 observation, _, terminated, truncated, info = env.step(action)
             if info["window_closed"]:
                 return "lobby" if base._game.lobby_requested else "quit"
@@ -229,8 +239,9 @@ def run_lobby(create_game, seed=None):
                 return
             if ghost_choice == "back":
                 continue
-            ghost_entry = (None, GHOST_MODEL, TEAM_MODEL)[ghost_choice]
-            if entry is None and ghost_entry is None:
+            interception = ghost_choice == 3
+            ghost_entry = (None, GHOST_MODEL, TEAM_MODEL, None)[ghost_choice]
+            if entry is None and ghost_entry is None and not interception:
                 game = create_game()
                 game.enable_lobby_return()
                 pygame.display.set_caption("PAC-AI ARENA | Clavier | Échap : lobby")
@@ -242,7 +253,8 @@ def run_lobby(create_game, seed=None):
             try:
                 model = load_model(entry) if entry is not None else None
                 ghost_model = load_model(ghost_entry) if ghost_entry is not None else None
-                route = play_model(entry, model, seed, ghost_entry=ghost_entry, ghost_model=ghost_model)
+                route = play_model(entry, model, seed, ghost_entry=ghost_entry, ghost_model=ghost_model,
+                                   interception=interception)
             except (ImportError, OSError, RuntimeError, ValueError) as error:
                 print(f"Mode IA: {error}", file=sys.stderr)
                 pygame.init()
