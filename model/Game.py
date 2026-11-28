@@ -109,6 +109,8 @@ class Game:
         self.last_capture = self._controller.ghosts_player(pacman, ghosts)
         self._controller.stupid_ghosts(ghosts, walls, controlled)
         self._controller.smart_ghosts(pacman, ghosts, walls, controlled)
+        if self.last_capture is None:
+            self.last_capture = self._controller.ghosts_player(pacman, ghosts)
 
     @staticmethod
     def _positions(sprites):
