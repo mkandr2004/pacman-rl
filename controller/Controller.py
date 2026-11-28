@@ -1,8 +1,9 @@
 import pygame
 
+import consts
 from enums import Direction
 from model.Objects.Interactable.Interactable import Coin, Point, Pear, Rasp, Lemon, Straw
-from model.Objects.Sprites.Sprite import StupidGhost, SmartGhost, Ghost
+from model.Objects.Sprites.Sprite import StupidGhost, SmartGhost, SleepingGhost, Ghost
 from model.Objects.background.Wall import Wall
 
 
@@ -220,6 +221,14 @@ class Controller:
                 if controlled and ghost in controlled:
                     self.move_controlled_ghost(ghost, obstacles, controlled[ghost])
                     continue
+                if isinstance(ghost, SleepingGhost) and ghost.moving_direction is not None:
+                    x, y = ghost.get_sprite_pos()
+                    if x % consts.BLOCK_WIDTH or y % consts.BLOCK_HEIGHT:
+                        # Keep crossing the tile before reconsidering the route.
+                        self._move_in_direction(ghost, ghost.moving_direction)
+                        if not self._collider.check_ghost_collisions(ghost, obstacles):
+                            continue
+                        ghost.discard_move()
                 collided = True
                 ghost.find_sprite(sprite)
                 while collided:
